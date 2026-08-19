@@ -203,12 +203,7 @@ export async function apply(ctx: Context, config: A2aServerConfig): Promise<void
     taskStore = fileTaskStore
   }
 
-  const agentPresets = ctx.get('agentPresets') as
-    { list(): Promise<Array<{ id: string }>> } | undefined
-  const presetIds = agentPresets === undefined
-    ? []
-    : (await agentPresets.list()).map(preset => preset.id)
-  const agentCard = makeAgentCard(config, path, presetIds)
+  const agentCard = makeAgentCard(config, path, await listPresetIds(ctx))
   const requestHandler = new DefaultRequestHandler(
     agentCard,
     taskStore,
@@ -220,7 +215,7 @@ export async function apply(ctx: Context, config: A2aServerConfig): Promise<void
     const url = req.url ?? '/'
     metrics.requests++
     if (req.method === 'GET' && url === agentCardPath) {
-      sendJson(res, AgentCard.toJSON(agentCard))
+      sendJson(res, AgentCard.toJSON(makeAgentCard(config, path, await listPresetIds(ctx))))
       return
     }
     if (config.metricsPath !== undefined && req.method === 'GET' && url === config.metricsPath) {
@@ -679,6 +674,23 @@ interface Metrics {
 /** Create a zero-initialized metrics record. */
 function createMetrics(): Metrics {
   return { requests: 0, totalTasks: 0, completedTasks: 0, failedTasks: 0, canceledTasks: 0 }
+}
+
+/**
+ * List available agent preset ids for AgentCard discovery.
+ * @param ctx - Cordis context.
+ * @returns preset ids, or an empty array when the service is unavailable or cannot be read.
+ */
+async function listPresetIds(ctx: Context): Promise<string[]> {
+  const agentPresets = ctx.get('agentPresets') as
+    { list(): Promise<Array<{ id: string }>> } | undefined
+  if (agentPresets === undefined) return []
+  try {
+    return (await agentPresets.list()).map(preset => preset.id)
+  } catch {
+    // Discovery is best-effort: an unreadable roster should not break AgentCard.
+    return []
+  }
 }
 
 /**

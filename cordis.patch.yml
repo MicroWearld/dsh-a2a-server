@@ -1,0 +1,28 @@
+# A2A server plugin bundle patch: insert the A2A server bridge into a DSH
+# profile. Override provider/model/port via a higher profile patch as needed.
+
+- insert:
+    - id: a2a-server
+      name: 'dsh-a2a-server'
+      config:
+        path: /a2a
+        agentCardPath: /.well-known/agent.json
+        host: 127.0.0.1
+        port: 4123
+        cwd: !!js process.cwd()
+        provider: deepseek-official
+        model: deepseek-v4-pro
+        agentCard:
+          name: DeepSeek Harness A2A Agent
+          description: A DeepSeek Harness agent exposed over A2A
+          url: http://127.0.0.1:4123/a2a
+          version: 0.1.0
+          capabilities:
+            streaming: true
+            pushNotifications: false
+          skills:
+            - id: general-assistant
+              name: General Assistant
+              description: Handles open-ended text tasks
+              inputModes: [text/plain]
+              outputModes: [text/plain]

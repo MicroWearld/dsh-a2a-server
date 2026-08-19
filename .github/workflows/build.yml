@@ -44,7 +44,7 @@ jobs:
 
       - name: Install DeepSeek Harness dependencies
         working-directory: deepseek-harness
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --config.enableGlobalVirtualStore=false
 
       - name: Build plugin
         env:

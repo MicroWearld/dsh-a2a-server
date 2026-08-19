@@ -441,6 +441,7 @@ function makeExecutor(
     async execute(requestContext, eventBus) {
       const taskId = requestContext.taskId
       const contextId = requestContext.contextId
+      const presetId = resolvePreset(requestContext.request.metadata, config.agentPreset)
       let record = records.get(taskId)
       if (record === undefined) {
         if (!isAbsolute(cwd)) throw new Error(`cwd must be an absolute path: ${cwd}`)
@@ -449,17 +450,17 @@ function makeExecutor(
           sessionId,
           meta: {
             cwd,
-            ...(config.agentPreset !== undefined ? { agentPreset: config.agentPreset } : {}),
+            ...(presetId !== undefined ? { agentPreset: presetId } : {}),
           },
           agentOptions: agentOptions(config),
-          ...(config.agentPreset !== undefined ? {
+          ...(presetId !== undefined ? {
             setup: async (agentCtx: Context) => {
               const presets = ctx.get('agentPresets') as
                 { mount(agentCtx: Context, id?: string): Promise<unknown> } | undefined
               if (presets === undefined) {
-                throw new Error(`a2a-server: agentPreset "${config.agentPreset}" configured but agentPresets service is unavailable`)
+                throw new Error(`a2a-server: agentPreset "${presetId}" configured but agentPresets service is unavailable`)
               }
-              await presets.mount(agentCtx, config.agentPreset)
+              await presets.mount(agentCtx, presetId)
             },
           } : {}),
         })
@@ -662,6 +663,22 @@ interface Metrics {
 /** Create a zero-initialized metrics record. */
 function createMetrics(): Metrics {
   return { requests: 0, totalTasks: 0, completedTasks: 0, failedTasks: 0, canceledTasks: 0 }
+}
+
+/**
+ * Resolve the agent preset id for one request: per-request metadata wins,
+ * falling back to the global config.
+ * @param metadata - the A2A SendMessage metadata map.
+ * @param fallback - the configured global agentPreset.
+ * @returns the preset id, or undefined when neither source provides one.
+ */
+function resolvePreset(
+  metadata: Record<string, unknown> | undefined,
+  fallback: string | undefined,
+): string | undefined {
+  const requested = metadata?.agentPreset ?? metadata?.preset
+  if (typeof requested === 'string' && requested.length > 0) return requested
+  return fallback
 }
 
 /** Resolve the configured bearer token from a literal or environment variable. */

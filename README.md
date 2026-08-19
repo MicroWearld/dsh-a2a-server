@@ -18,7 +18,7 @@
 - Task 文件持久化（`persistTasks` + `persistenceRoot`）
 - `input-required` approval 映射
 - Role 归一化（`user` / `ROLE_USER` 都支持）
-- Agent preset 配置（`agentPreset`）
+- Agent preset 配置（全局 `agentPreset` + 请求体 `metadata.agentPreset` 覆盖）
 
 ## 构建
 
@@ -90,6 +90,33 @@ dev_install_package --dir D:\workspace\dsh\dsh-a2a-server
       name: DeepSeek Harness A2A Agent
       description: A DeepSeek Harness agent exposed over A2A
 ```
+
+## 请求级 preset
+
+在 A2A `SendMessage` / `SendStreamingMessage` 请求的 `params.metadata` 中传入 `agentPreset`（或兼容别名 `preset`），即可覆盖全局配置：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "SendMessage",
+  "params": {
+    "message": {
+      "messageId": "req-001",
+      "role": "ROLE_USER",
+      "parts": [{ "text": "你好" }]
+    },
+    "configuration": {
+      "acceptedOutputModes": ["text/plain"]
+    },
+    "metadata": {
+      "agentPreset": "coding"
+    }
+  }
+}
+```
+
+优先级：请求 `metadata.agentPreset` / `metadata.preset` > 全局配置 `agentPreset`。
 
 ## 说明
 

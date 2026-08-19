@@ -49,6 +49,21 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1
 npm run build:ps1
 ```
 
+## 下载自动构建产物
+
+每次向 `main` 推送代码、更新 Pull Request，或手动运行 GitHub Actions 的
+`Build` 工作流时，都会生成可安装的 npm `.tgz` 包。
+
+### 从 GitHub 网页下载
+
+1. 打开仓库的 [Actions → Build](https://github.com/MicroWearld/dsh-a2a-server/actions/workflows/build.yml)。
+2. 进入最近一次状态为绿色的构建。
+3. 在页面底部的 **Artifacts** 区域下载
+   `dsh-a2a-server-<commit SHA>`。
+4. 解压下载的 ZIP，即可获得 `dsh-a2a-server-<version>.tgz`。
+
+> GitHub Actions 构建产物保留 14 天；长期分发请使用 GitHub Release。
+
 ## 安装
 
 使用 DSH 官方插件装配命令：

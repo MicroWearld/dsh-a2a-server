@@ -203,7 +203,12 @@ export async function apply(ctx: Context, config: A2aServerConfig): Promise<void
     taskStore = fileTaskStore
   }
 
-  const agentCard = makeAgentCard(config, path)
+  const agentPresets = ctx.get('agentPresets') as
+    { list(): Promise<Array<{ id: string }>> } | undefined
+  const presetIds = agentPresets === undefined
+    ? []
+    : (await agentPresets.list()).map(preset => preset.id)
+  const agentCard = makeAgentCard(config, path, presetIds)
   const requestHandler = new DefaultRequestHandler(
     agentCard,
     taskStore,
@@ -377,9 +382,10 @@ export async function apply(ctx: Context, config: A2aServerConfig): Promise<void
  * Build the AgentCard served at `agentCardPath`.
  * @param config - plugin configuration.
  * @param path - JSON-RPC endpoint path.
+ * @param presetIds - available agent preset ids to advertise.
  * @returns a fully populated A2A AgentCard.
  */
-function makeAgentCard(config: A2aServerConfig, path: string): AgentCard {
+function makeAgentCard(config: A2aServerConfig, path: string, presetIds: string[] = []): AgentCard {
   const host = config.host ?? '127.0.0.1'
   const port = config.port ?? 4123
   const skills: AgentSkill[] = (config.agentCard?.skills ?? []).map(skill => ({
@@ -407,7 +413,17 @@ function makeAgentCard(config: A2aServerConfig, path: string): AgentCard {
     capabilities: {
       streaming: config.agentCard?.capabilities?.streaming ?? true,
       pushNotifications: config.agentCard?.capabilities?.pushNotifications ?? false,
-      extensions: [],
+      extensions: [{
+        uri: 'https://dsh.local/a2a/preset-selection',
+        description: 'To select an agent preset for a task, include "agentPreset" (or "preset") in SendMessage/SendStreamingMessage params.metadata.',
+        required: false,
+        params: {
+          metadataKey: 'agentPreset',
+          aliases: ['preset'],
+          default: config.agentPreset ?? null,
+          presets: presetIds,
+        },
+      }],
       extendedAgentCard: false,
     },
     securitySchemes: {},

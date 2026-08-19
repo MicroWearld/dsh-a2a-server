@@ -130,6 +130,30 @@ dsh plugin --profile desktop add .\dsh-a2a-server\
 
 优先级：请求 `metadata.agentPreset` / `metadata.preset` > 全局配置 `agentPreset`。
 
+### 调用方如何发现 preset 设置方式
+
+AgentCard 会在 `capabilities.extensions` 中声明 preset 选择扩展：
+
+```json
+{
+  "uri": "https://dsh.local/a2a/preset-selection",
+  "description": "To select an agent preset for a task, include \"agentPreset\" (or \"preset\") in SendMessage/SendStreamingMessage params.metadata.",
+  "required": false,
+  "params": {
+    "metadataKey": "agentPreset",
+    "aliases": ["preset"],
+    "default": "standard",
+    "presets": ["standard", "router-standard"]
+  }
+}
+```
+
+调用方读取 AgentCard 即可知道：
+
+- 在 `params.metadata` 里传 `agentPreset`（或 `preset`）
+- 可用 preset 列表在 `params.presets`
+- 服务端默认 preset 在 `params.default`
+
 ## 说明
 
 - 本插件不是 `@deepseek-ai` 官方包，使用无 scope 包名 `dsh-a2a-server`。

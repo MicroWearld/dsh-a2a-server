@@ -54,19 +54,22 @@ link_pkg @deepseek-ai/dsh-agent packages/core/agent
 link_pkg @deepseek-ai/dsh-session packages/core/session
 link_pkg @deepseek-ai/dsh-user-approval packages/interaction/user-approval
 mkdir -p node_modules/@a2a-js
-A2A_SDK=$(node -e "
-  const fs = require('fs');
-  const path = require('path');
-  const { createRequire } = require('module');
-  const req = createRequire(path.resolve(process.argv[1], 'package.json'));
-  let current = req.resolve('@a2a-js/sdk');
-  while (!fs.existsSync(path.join(current, 'package.json'))) {
-    const parent = path.dirname(current);
-    if (parent === current) process.exit(1);
-    current = parent;
-  }
-  process.stdout.write(current);
-" "$CHECKOUT/packages/a2a/a2a-protocol") || true
+A2A_SDK="${A2A_SDK_PATH:-}"
+if [ -z "$A2A_SDK" ]; then
+  A2A_SDK=$(node -e "
+    const fs = require('fs');
+    const path = require('path');
+    const { createRequire } = require('module');
+    const req = createRequire(path.resolve(process.argv[1], 'package.json'));
+    let current = req.resolve('@a2a-js/sdk');
+    while (!fs.existsSync(path.join(current, 'package.json'))) {
+      const parent = path.dirname(current);
+      if (parent === current) process.exit(1);
+      current = parent;
+    }
+    process.stdout.write(current);
+  " "$CHECKOUT/packages/a2a/a2a-protocol") || true
+fi
 if [ -z "$A2A_SDK" ] || [ ! -e "$A2A_SDK" ]; then
   echo "build: cannot locate @a2a-js/sdk in the dsh checkout" >&2
   exit 1

@@ -46,9 +46,13 @@ jobs:
         working-directory: deepseek-harness
         run: pnpm install --frozen-lockfile --config.enableGlobalVirtualStore=false
 
+      - name: Install CI-only A2A SDK
+        run: npm install --prefix .ci-deps --no-package-lock --ignore-scripts @a2a-js/sdk@1.0.1
+
       - name: Build plugin
         env:
           DSH_CHECKOUT: ${{ github.workspace }}/deepseek-harness
+          A2A_SDK_PATH: ${{ github.workspace }}/.ci-deps/node_modules/@a2a-js/sdk
         run: bash scripts/build.sh
 
       - name: Verify bundle

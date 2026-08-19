@@ -49,7 +49,9 @@ Link-Pkg 'node_modules\@deepseek-ai\dsh-agent' (Join-Path $checkout 'packages\co
 Link-Pkg 'node_modules\@deepseek-ai\dsh-session' (Join-Path $checkout 'packages\core\session')
 Link-Pkg 'node_modules\@deepseek-ai\dsh-user-approval' (Join-Path $checkout 'packages\interaction\user-approval')
 $a2aWorkspace = Join-Path $checkout 'packages\a2a\a2a-protocol'
-$a2aSdk = & node -e @'
+$a2aSdk = $env:A2A_SDK_PATH
+if (-not $a2aSdk) {
+  $a2aSdk = & node -e @'
 const fs = require('fs');
 const path = require('path');
 const { createRequire } = require('module');
@@ -62,6 +64,7 @@ while (!fs.existsSync(path.join(current, 'package.json'))) {
 }
 process.stdout.write(current);
 '@ $a2aWorkspace
+}
 if ($LASTEXITCODE -ne 0 -or -not $a2aSdk -or -not (Test-Path $a2aSdk)) {
   throw 'build: cannot locate @a2a-js/sdk in the dsh checkout'
 }

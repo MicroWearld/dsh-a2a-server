@@ -46,6 +46,10 @@ jobs:
         working-directory: deepseek-harness
         run: pnpm install --frozen-lockfile --config.enableGlobalVirtualStore=false
 
+      - name: Build DeepSeek Harness host libraries
+        working-directory: deepseek-harness
+        run: pnpm run build:lib:host
+
       - name: Install CI-only A2A SDK
         run: npm install --prefix .ci-deps --no-package-lock --ignore-scripts @a2a-js/sdk@1.0.1
 

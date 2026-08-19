@@ -1,6 +1,6 @@
 {
   "name": "dsh-a2a-server",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A2A server bridge plugin for DeepSeek Harness",
   "private": true,
   "type": "module",

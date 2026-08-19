@@ -48,7 +48,13 @@ Link-Pkg 'node_modules\@deepseek-ai\dsh-llm' (Join-Path $checkout 'packages\llm\
 Link-Pkg 'node_modules\@deepseek-ai\dsh-agent' (Join-Path $checkout 'packages\core\agent')
 Link-Pkg 'node_modules\@deepseek-ai\dsh-session' (Join-Path $checkout 'packages\core\session')
 Link-Pkg 'node_modules\@deepseek-ai\dsh-user-approval' (Join-Path $checkout 'packages\interaction\user-approval')
-Link-Pkg 'node_modules\@a2a-js\sdk' (Join-Path $checkout 'packages\a2a\a2a-protocol\node_modules\@a2a-js\sdk')
+$a2aSdk = Join-Path $checkout 'packages\a2a\a2a-protocol\node_modules\@a2a-js\sdk'
+if (-not (Test-Path $a2aSdk)) {
+  $storeEntry = Get-ChildItem (Join-Path $checkout 'node_modules\.pnpm') -Directory -Filter '@a2a-js+sdk@*' | Select-Object -First 1
+  if ($storeEntry) { $a2aSdk = Join-Path $storeEntry.FullName 'node_modules\@a2a-js\sdk' }
+}
+if (-not (Test-Path $a2aSdk)) { throw 'build: cannot locate @a2a-js/sdk in the dsh checkout' }
+Link-Pkg 'node_modules\@a2a-js\sdk' $a2aSdk
 Link-Pkg 'node_modules\@types\node' (Join-Path $checkout 'node_modules\@types\node')
 
 $tsc = Join-Path $checkout 'node_modules\.bin\tsc.cmd'

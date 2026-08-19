@@ -54,7 +54,20 @@ link_pkg @deepseek-ai/dsh-agent packages/core/agent
 link_pkg @deepseek-ai/dsh-session packages/core/session
 link_pkg @deepseek-ai/dsh-user-approval packages/interaction/user-approval
 mkdir -p node_modules/@a2a-js
-link_pkg @a2a-js/sdk packages/a2a/a2a-protocol/node_modules/@a2a-js/sdk
+A2A_SDK="$CHECKOUT/packages/a2a/a2a-protocol/node_modules/@a2a-js/sdk"
+if [ ! -e "$A2A_SDK" ]; then
+  A2A_SDK=$(find "$CHECKOUT/node_modules/.pnpm" -maxdepth 1 -type d -name '@a2a-js+sdk@*' -print -quit 2>/dev/null)/node_modules/@a2a-js/sdk
+fi
+if [ ! -e "$A2A_SDK" ]; then
+  echo "build: cannot locate @a2a-js/sdk in the dsh checkout" >&2
+  exit 1
+fi
+node -e "
+  const fs = require('fs');
+  const path = require('path');
+  fs.rmSync('node_modules/@a2a-js/sdk', { recursive: true, force: true });
+  fs.symlinkSync(path.resolve(process.argv[1]), path.resolve('node_modules/@a2a-js/sdk'), process.platform === 'win32' ? 'junction' : 'dir');
+" "$A2A_SDK"
 # @types/node（编译类型；checkout 自带）
 link_pkg @types/node node_modules/@types/node
 

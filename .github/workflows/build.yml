@@ -1,0 +1,70 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build plugin (Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out plugin
+        uses: actions/checkout@v4
+
+      - name: Check out DeepSeek Harness
+        uses: actions/checkout@v4
+        with:
+          repository: deepseek-ai/deepseek-harness
+          ref: ${{ vars.DSH_REF || 'master' }}
+          path: deepseek-harness
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: deepseek-harness/pnpm-lock.yaml
+
+      - name: Install DeepSeek Harness dependencies
+        working-directory: deepseek-harness
+        run: pnpm install --frozen-lockfile
+
+      - name: Build plugin
+        env:
+          DSH_CHECKOUT: ${{ github.workspace }}/deepseek-harness
+        run: bash scripts/build.sh
+
+      - name: Verify bundle
+        run: |
+          test -s lib/index.js
+          node --check lib/index.js
+
+      - name: Pack plugin
+        run: |
+          mkdir -p dist
+          npm pack --pack-destination dist
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-a2a-server-${{ github.sha }}
+          path: dist/*.tgz
+          if-no-files-found: error
+          retention-days: 14

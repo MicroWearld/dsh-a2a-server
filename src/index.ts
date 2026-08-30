@@ -297,7 +297,24 @@ export async function apply(ctx: Context, config: A2aServerConfig): Promise<void
       for (const dispose of disposers) dispose()
     }, 'a2a-server.routes')
   } else {
-    const server = createServer(handleHttp)
+    // 使用同步请求回调捕获异步处理的拒绝，避免 unhandledRejection 拖垮宿主进程。
+    const requestHandler = (req: IncomingMessage, res: ServerResponse): void => {
+      void handleHttp(req, res).catch((error: unknown) => {
+        logger.error(`a2a-server: HTTP request failed: ${String(error)}`)
+        if (res.writableEnded) return
+        if (!res.headersSent) {
+          res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({ error: 'internal server error' }))
+        } else {
+          // 响应头已发送时无法再返回 JSON，只需结束当前响应。
+          res.end()
+        }
+      })
+    }
+    const server = createServer(requestHandler)
+    server.on('error', (error: unknown) => {
+      logger.error(`a2a-server: HTTP server error: ${String(error)}`)
+    })
     server.listen(config.port ?? 4123, config.host ?? '127.0.0.1')
     ctx.effect(() => () => {
       server.close()
@@ -363,7 +380,9 @@ export async function apply(ctx: Context, config: A2aServerConfig): Promise<void
   if (config.taskTtlMs !== undefined) {
     const ttlMs = config.taskTtlMs
     ttlTimer = setInterval(() => {
-      void cleanupExpired(records, ttlMs, logger)
+      void cleanupExpired(records, ttlMs, logger).catch((error: unknown) => {
+        logger.error(`a2a-server: TTL cleanup failed: ${String(error)}`)
+      })
     }, Math.min(ttlMs, 60_000))
   }
 
